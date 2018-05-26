@@ -1,0 +1,51 @@
+{
+  "name": "gupiao",
+  "version": "0.0.7",
+  "description": "专为程序员量身打造的炒股盯盘小工具",
+  "main": "index.js",
+  "keywords": [
+    "stock",
+    "股票",
+    "炒股"
+  ],
+  "author": "sunguide@qq.com",
+  "license": "MIT",
+  "bin": {
+    "gupiao": "./bin/index.js"
+  },
+  "dependencies": {
+    "chalk": "^2.3.0",
+    "cheerio": "^1.0.0-rc.2",
+    "cli-table2": "^0.2.0",
+    "cliui": "^4.0.0",
+    "commander": "^2.12.2",
+    "eslint": "^4.0.0",
+    "log-update": "^2.3.0",
+    "moment": "^2.20.1",
+    "superagent": "^3.8.2",
+    "superagent-charset": "^1.2.0",
+    "urllib": "^2.25.3"
+  },
+  "files": [
+    "app",
+    "bin",
+    "data",
+    "lib",
+    "index.js"
+  ],
+  "scripts": {
+    "start": "node index",
+    "test": "echo \"ok\" && exit 1"
+  },
+  "ci": {
+    "version": "8, 9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sunguide/gupiao.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sunguide/gupiao/issues"
+  },
+  "homepage": "https://github.com/sunguide/gupiao#readme"
+}
