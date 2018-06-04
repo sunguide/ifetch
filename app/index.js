@@ -19,57 +19,78 @@ class app {
         fetch_url = url;
         domain = URL.parse(url).hostname;
         let html = await request.get(url);
+        html = html.text;
         if(html){
-            let $ = cheerio.load(html.text);
-            console.log(html.text);
+            let $ = cheerio.load(html);
             let links = $("link");
             let imgs = $("img");
             let javascripts = $("script");
             let sources = $("source");
 
             if(links.length > 0){
-                $(links).each(function(i,link){
-                    console.log($(link).attr("href"));
-                    app.download($(link).attr("href")+"?ddd=sdfsdf#ddsdf");
+                $(links).each(async (i,link) => {
+                    let _url = $(link).attr("href");
+                    console.log(_url)
+                    let relativePath = await app.download(_url);
+                    html.replace(_url, relativePath);
+                    console.log(relativePath);
                 });
             }
             if(imgs.length > 0){
                 $(imgs).each(function(i,img){
-                    console.log($(img).attr("src"));
-                    app.download($(img).attr("src"));
+                    let _url = $(img).attr("src");
+                    console.log(_url);
+                    let relativePath = app.download(_url);
+                    html.replace(_url, relativePath);
                 });
             }
             console.log(javascripts.length);
             if(javascripts.length > 0){
                 $(javascripts).each(function(i,javascript){
-                    console.log($(javascript).attr("src"));
-                    app.download($(javascript).attr("src"));
+                    let _url = $(javascript).attr("src");
+                    let relativePath = app.download(_url);
+                    html.replace(_url, relativePath);
                 });
             }
 
             if(sources.length > 0){
                 $(sources).each(function(i,source){
-                    console.log($(source).attr("src"));
-                    app.download($(source).attr("src"));
+                    let _url = $(source).attr("src");
+                    let relativePath = app.download(_url);
+                    html.replace(_url, relativePath);
                 });
             }
+            app.createFile(app.getDownloadFilename(url), html);
         }
 
     }
 
     static async download(url){
         if(!url){
-            return;
+            return "";
         }
-        let dirname = app.getDownloadDir(url);
-        console.log(dirname);
-        console.log(app.getDownloadDir());
-        helper.mkdir(dirname);
-        let filePath = path.join(dirname, app.getDownloadFilename(url));
-        request.get(url).pipe(fs.createWriteStream(filePath));
+        try{
+            let dirname = app.getDownloadDir(url);
+            console.log(dirname);
+            helper.mkdir(dirname);
+            let filePath = path.join(dirname, app.getDownloadFilename(url));
+            request.get(url).pipe(fs.createWriteStream(filePath));
+            return app.getRelativePath(filePath);
+        }catch(err){
+            console.log(err);
+        }
+
     }
     static getDownloadFilename(url){
-        return path.basename(URL.parse(url).pathname);
+        let pathname = URL.parse(url).pathname;
+        if(pathname){
+            if(pathname.substr(pathname.length - 1, 1) === "/"){
+                return "index.html";
+            }else if(pathname.indexOf(".") < 0){
+                return path.basename(pathname) + ".html";
+            }
+        }
+        return path.basename(pathname);
     }
     static getDownloadDir(url){
         if(!url){
@@ -79,10 +100,26 @@ class app {
         if(URL.parse(url).hostname == domain){
             dirname = path.join(dirname,path.dirname(URL.parse(url).pathname));
         }else{
-            dirname = path.join(dirname,URL.parse(url).hostname);
+            dirname = path.join(dirname, URL.parse(url).hostname);
             dirname = path.join(dirname,path.dirname(URL.parse(url).pathname));
         }
         return dirname;
+    }
+
+    static getRelativePath(filePath){
+        let dirname = path.resolve(__dirname, "../dowloads/"+domain);
+
+        if(!filePath){
+            return dirname;
+        }
+        return filePath.replace(dirname,"./")
+    }
+
+    static createFile(filePath, content){
+        // 写入数据, 文件不存在会自动创建
+        fs.writeFile(filePath, content, function (err) {
+          if (err) throw err;
+        });
     }
 
 }
