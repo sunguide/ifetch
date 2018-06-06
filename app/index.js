@@ -26,41 +26,47 @@ class app {
             let imgs = $("img");
             let javascripts = $("script");
             let sources = $("source");
+            let downloadDir = app.getDownloadDir(url);
 
             if(links.length > 0){
                 $(links).each(async (i,link) => {
                     let _url = $(link).attr("href");
-                    console.log(_url)
-                    let relativePath = await app.download(_url);
-                    html.replace(_url, relativePath);
-                    console.log(relativePath);
+                    let absolutePath = await app.download(_url);
+                    console.log(absolutePath);
+                    let relativePath = app.getRelativePath(absolutePath,downloadDir);
+                    html = html.replace(_url, relativePath);
                 });
             }
             if(imgs.length > 0){
-                $(imgs).each(function(i,img){
+                $(imgs).each(async (i,img) => {
                     let _url = $(img).attr("src");
                     console.log(_url);
-                    let relativePath = app.download(_url);
-                    html.replace(_url, relativePath);
+                    let absolutePath = await app.download(_url);
+                    let relativePath = app.getRelativePath(absolutePath, downloadDir);
+                    html = html.replace(_url, relativePath);
                 });
             }
             console.log(javascripts.length);
             if(javascripts.length > 0){
-                $(javascripts).each(function(i,javascript){
+                $(javascripts).each(async (i,javascript) => {
                     let _url = $(javascript).attr("src");
-                    let relativePath = app.download(_url);
-                    html.replace(_url, relativePath);
+                    let absolutePath = await app.download(_url);
+                    let relativePath = app.getRelativePath(absolutePath, downloadDir)
+                    html = html.replace(_url, relativePath);
                 });
             }
 
             if(sources.length > 0){
-                $(sources).each(function(i,source){
+                $(sources).each(async (i,source) => {
                     let _url = $(source).attr("src");
-                    let relativePath = app.download(_url);
-                    html.replace(_url, relativePath);
+                    let relativePath = await app.download(_url);
+                    html = html.replace(_url, relativePath);
                 });
             }
-            app.createFile(app.getDownloadFilename(url), html);
+            console.log(html)
+            setTimeout(()=>{
+              app.createFile(downloadDir + "/" + app.getDownloadFilename(url), html);
+            },2000)
         }
 
     }
@@ -74,8 +80,12 @@ class app {
             console.log(dirname);
             helper.mkdir(dirname);
             let filePath = path.join(dirname, app.getDownloadFilename(url));
+            if(url.indexOf("//") === 0){
+               url  =  "http:" + url;
+            }
+            console.log("url:"+url)
             request.get(url).pipe(fs.createWriteStream(filePath));
-            return app.getRelativePath(filePath);
+            return filePath;
         }catch(err){
             console.log(err);
         }
@@ -90,13 +100,17 @@ class app {
                 return path.basename(pathname) + ".html";
             }
         }
+        console.log(path.basename(pathname))
         return path.basename(pathname);
     }
     static getDownloadDir(url){
         if(!url){
             url = fetch_url;
+        }else if(url.indexOf("//") === 0){
+            url = "http:" + url;
         }
         let dirname = path.resolve(__dirname, "../dowloads/"+domain);
+        console.log(path.dirname(URL.parse(url).pathname));
         if(URL.parse(url).hostname == domain){
             dirname = path.join(dirname,path.dirname(URL.parse(url).pathname));
         }else{
@@ -106,16 +120,21 @@ class app {
         return dirname;
     }
 
-    static getRelativePath(filePath){
+    static getRelativePath(filePath, currentPath){
         let dirname = path.resolve(__dirname, "../dowloads/"+domain);
+
+        if(currentPath){
+            dirname = currentPath;
+        }
 
         if(!filePath){
             return dirname;
         }
-        return filePath.replace(dirname,"./")
+        return path.relative(currentPath,filePath)
     }
 
     static createFile(filePath, content){
+        helper.mkdir(path.dirname(filePath));
         // 写入数据, 文件不存在会自动创建
         fs.writeFile(filePath, content, function (err) {
           if (err) throw err;
